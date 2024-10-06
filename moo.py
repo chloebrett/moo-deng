@@ -4,7 +4,9 @@ import sys
 import json
 from uuid import uuid4
 from getkey import getkey, keys
+import os 
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 class MooState:
     def __init__(self):
@@ -18,16 +20,16 @@ class MooState:
 
 
     def load(self):
-        with open("data/cards.json") as file:
+        with open(dir_path + "/data/cards.json") as file:
             self.cards = json.load(file)
-        with open("data/config.json") as file:
+        with open(dir_path + "/data/config.json") as file:
             self.config = json.load(file)
-        with open("data/reviews.json") as file:
+        with open(dir_path + "/data/reviews.json") as file:
             reviews_json = json.load(file)
             self.reviews = {}
             for card_id in reviews_json.keys():
                 self.reviews[card_id] = [ReviewLog.from_dict(review_log) for review_log in reviews_json[card_id]]
-        with open("data/cards_state.json") as file:
+        with open(dir_path + "/data/cards_state.json") as file:
             cards_state_json = json.load(file)
             self.cards_state = {}
             for card_id in cards_state_json.keys():
@@ -35,14 +37,14 @@ class MooState:
 
 
     def save(self):
-        with open("data/cards.json", "w") as file:
+        with open(dir_path + "/data/cards.json", "w") as file:
             json.dump(self.cards, file)
-        with open("data/config.json", "w") as file:
+        with open(dir_path + "/data/config.json", "w") as file:
             json.dump(self.config, file)
-        with open("data/reviews.json", "w") as file:
+        with open(dir_path + "/data/reviews.json", "w") as file:
             reviews_json = {card_id: [review_log.to_dict() for review_log in self.reviews[card_id]] for card_id in self.reviews.keys()}
             json.dump(reviews_json, file)
-        with open("data/cards_state.json", "w") as file:
+        with open(dir_path + "/data/cards_state.json", "w") as file:
             cards_state_json = {card_id: self.cards_state[card_id].to_dict() for card_id in self.cards_state.keys()}
             json.dump(cards_state_json, file)
 
