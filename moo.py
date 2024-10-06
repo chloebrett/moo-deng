@@ -23,7 +23,7 @@ class MooState:
 
     def load_config(self):
         with open(dir_path + "/config.json") as file:
-            self.config = self.config.update(json.load(file))
+            self.config.update(json.load(file))
 
 
     def load(self):
