@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import sys
 import json
 from uuid import uuid4
-from getkey import getkey, keys
+from getkey import getkey
 import os 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -14,22 +14,28 @@ class MooState:
         self.config = {
             "retention_goal": 0.9,
             "show_due_time": False,
+            "data_path": dir_path + "/data",
         }
         self.reviews = {}
         self.cards_state = {}
+        self.load_config()
+
+
+    def load_config(self):
+        with open(dir_path + "/config.json") as file:
+            self.config = self.config.update(json.load(file))
 
 
     def load(self):
-        with open(dir_path + "/data/cards.json") as file:
+        path = self.config["data_path"]
+        with open(path + "/cards.json") as file:
             self.cards = json.load(file)
-        with open(dir_path + "/data/config.json") as file:
-            self.config = json.load(file)
-        with open(dir_path + "/data/reviews.json") as file:
+        with open(path + "/reviews.json") as file:
             reviews_json = json.load(file)
             self.reviews = {}
             for card_id in reviews_json.keys():
                 self.reviews[card_id] = [ReviewLog.from_dict(review_log) for review_log in reviews_json[card_id]]
-        with open(dir_path + "/data/cards_state.json") as file:
+        with open(path + "/cards_state.json") as file:
             cards_state_json = json.load(file)
             self.cards_state = {}
             for card_id in cards_state_json.keys():
@@ -37,14 +43,13 @@ class MooState:
 
 
     def save(self):
-        with open(dir_path + "/data/cards.json", "w") as file:
+        path = self.config["data_path"]
+        with open(path + "/cards.json", "w") as file:
             json.dump(self.cards, file)
-        with open(dir_path + "/data/config.json", "w") as file:
-            json.dump(self.config, file)
-        with open(dir_path + "/data/reviews.json", "w") as file:
+        with open(path + "/reviews.json", "w") as file:
             reviews_json = {card_id: [review_log.to_dict() for review_log in self.reviews[card_id]] for card_id in self.reviews.keys()}
             json.dump(reviews_json, file)
-        with open(dir_path + "/data/cards_state.json", "w") as file:
+        with open(path + "/cards_state.json", "w") as file:
             cards_state_json = {card_id: self.cards_state[card_id].to_dict() for card_id in self.cards_state.keys()}
             json.dump(cards_state_json, file)
 
@@ -79,10 +84,23 @@ def humanize_interval(interval, rating):
         return f"{hours} hours"
 
 
+def num_to_rating(num):
+    if num == 1:
+        return Rating.Again
+    elif num == 2:
+        return Rating.Hard
+    elif num == 3:
+        return Rating.Good
+    elif num == 4:
+        return Rating.Easy
+    else:
+        return Rating.Good
+
+
 def practice(f, state, cards_to_practice):
     past_due = False
 
-    for card in cards_to_practice:
+    for i, card in enumerate(cards_to_practice):
         card_state = state.cards_state[card["id"]]
         now = datetime.now(timezone.utc)
 
@@ -102,8 +120,7 @@ def practice(f, state, cards_to_practice):
         print("========================================")
         print(card["front"])
         print("========================================")
-        getkey()
-        
+        getkey() # ignore input; any key continues
 
         next_interval_info = f.repeat(card_state)
         intervals = {
@@ -126,30 +143,19 @@ def practice(f, state, cards_to_practice):
         print(card["back"])
         print("========================================")
 
-        rating = getkey()
-        if rating == "1":
-            rating = Rating.Again
-        elif rating == "2":
-            rating = Rating.Hard
-        elif rating == "3":
-            rating = Rating.Good
-        elif rating == "4":
-            rating = Rating.Easy
-        else:
-            rating = Rating.Good
+        rating = num_to_rating(getkey())
 
         new_card_state, review_log = f.review_card(card_state, rating)
-        state.cards_state[card["id"]] = new_card_state
-        if card["id"] not in state.reviews:
-            state.reviews[card["id"]] = []
-        state.reviews[card["id"]].append(review_log)
+        id = card["id"]
+        state.cards_state[id] = new_card_state
+        if id not in state.reviews:
+            state.reviews[id] = []
+        state.reviews[id].append(review_log)
         state.save()
 
-        print()
-        print()
-        print()
-        print()
-        print()
+        if i < len(cards_to_practice) - 1:
+            for _ in range(5):
+                print()
 
 
 def learn(f, state):
@@ -164,7 +170,35 @@ def study(f, state):
     practice(f, state, cards_to_study)
 
 
+hippo = """
+  .-''''-. _    
+ ('    '  '0)-/)
+ '..____..:    \\._
+   \\u  u (        '-..------._
+   |     /      :   '.        '--.
+  .nn_nn/ (      :   '            '\\
+ ( '' '' /      ;     .             \\
+  ''----' "\\          :            : '.
+         .'/                           '.
+        / /                             '.
+       /_|       )                     .\\|
+         |      /\\                     . '
+         '--.__|  '--._  ,            /
+                      /'-,          .'
+                     /   |        _.' 
+                snd (____\\       /    
+                          \\      \\    
+                           '-'-'-' 
+Art credit: Shanaka Dias, http://www.ascii-art.de/ascii/ghi/hippo.txt
+"""
+
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: moo [learn|study|add|deng|wipe] <args>")
+        print("e.g. moo add 'front' 'back'")
+        print(hippo)
+        sys.exit(0)
+
     command = sys.argv[1]
     args = sys.argv[2:]
     
@@ -186,6 +220,6 @@ if __name__ == "__main__":
         back = args[1]
         add_card(state, front, back)
     elif command == "deng":
-        print("Deng...")
+        print(hippo)
     else:
         print("Moo")
