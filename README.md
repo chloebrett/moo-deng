@@ -50,7 +50,7 @@ Also I believe that searching the deck, deleting cards, synching between devices
 
 - Sorts your cards to give you the one you're most likely to forget first, based off a [sophisticated ML algorithm built on years of research](https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm)
 - Lets you decide what probability of recall you want to aim for (default is 90% which is a good balance between learning lots of new cards but not forgetting everything)
-- Handles all the maths behind this as well as persisting all the card data to/from a file
+- Handles all the maths behind this as well as persisting all the card data to/from a file (originally I planned on doing this myself but it turns out there's a [python library](https://github.com/open-spaced-repetition/py-fsrs) that gets us most of the way there already)
 - Exposes everything via a super simple CLI
 
 ## How does the algorithm work?
