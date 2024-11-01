@@ -1,4 +1,5 @@
 {
   "retention_goal": 0.9,
-  "show_due_time": false
+  "show_due_time": false,
+  "fuzz_mins": 1
 }

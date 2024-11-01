@@ -1,10 +1,11 @@
 from fsrs import FSRS, Card, Rating, ReviewLog, State
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import sys
 import json
 from uuid import uuid4
 from getkey import getkey
-import os 
+import os
+import random
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -15,6 +16,8 @@ class MooState:
             "retention_goal": 0.9,
             "show_due_time": False,
             "data_path": dir_path + "/data",
+            # adds or subtracts a random number between -n and n to the due date on each save
+            "fuzz_mins": 1, 
         }
         self.reviews = {}
         self.cards_state = {}
@@ -71,17 +74,20 @@ def add_card(state, front, back):
 
 
 def minutes(interval, rating):
-  return ((interval[rating].card.due - datetime.now(timezone.utc)).seconds + 1) // 60
+  return ((interval[rating].card.due - datetime.now(timezone.utc)).total_seconds() + 1) // 60
 
 
 def humanize_interval(interval, rating):
-    mins = minutes(interval, rating)
+    mins = int(minutes(interval, rating))
     if mins < 60:
-        return f"{mins} minutes"
+        return "1 minute" if mins == 1 else f"{mins} minutes"
+    elif mins < 60 * 24:
+        hours = mins // 60
+        return "1 hour" if hours == 1 else f"{hours} hours"
     else:
         hours = mins // 60
-        mins = mins % 60
-        return f"{hours} hours"
+        days = hours // 24
+        return "1 day" if days == 1 else f"{days} days"
 
 
 def num_to_rating(num):
@@ -97,7 +103,7 @@ def num_to_rating(num):
         return Rating.Good
 
 
-def practice(f, state, cards_to_practice):
+def practice(f, state, cards_to_practice, fuzz_mins):
     past_due = False
 
     for i, card in enumerate(cards_to_practice):
@@ -145,7 +151,13 @@ def practice(f, state, cards_to_practice):
 
         rating = num_to_rating(getkey())
 
+        # Implements a small amount of shuffling, so that you don't always see
+        # cards in the same order. Exact amount is configurable.
+        fuzz_amount = random.uniform(-fuzz_mins, fuzz_mins)
+        fuzz_amount_mins = timedelta(minutes = fuzz_amount)
+
         new_card_state, review_log = f.review_card(card_state, rating)
+        new_card_state.due += fuzz_amount_mins
         id = card["id"]
         state.cards_state[id] = new_card_state
         if id not in state.reviews:
@@ -161,13 +173,13 @@ def practice(f, state, cards_to_practice):
 def learn(f, state):
     cards_to_learn = list(filter(lambda card: state.cards_state[card["id"]].state == State.New, state.cards))
     cards_to_learn.sort(key=lambda card: state.cards_state[card["id"]].due)
-    practice(f, state, cards_to_learn)
+    practice(f, state, cards_to_learn, state.config["fuzz_mins"])
 
 
 def study(f, state):
     cards_to_study = list(filter(lambda card: state.cards_state[card["id"]].state != State.New, state.cards))
     cards_to_study.sort(key=lambda card: state.cards_state[card["id"]].due)
-    practice(f, state, cards_to_study)
+    practice(f, state, cards_to_study, state.config["fuzz_mins"])
 
 
 hippo = """
