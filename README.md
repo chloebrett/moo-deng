@@ -2,7 +2,36 @@
 
 Simple, cute command line spaced repetition system
 
-[WIP]
+# Setup
+
+1. Clone the repo
+2. Create a data dir, and update "data_path" in config.json to match it.
+3. Run the following in the data directory (optional, gives you a git backup + nice diffs)
+
+```
+git init
+yarn init
+yarn add prettier
+```
+
+4. Then add these to your bashrc:
+
+```
+moo() {
+        source ./path/to/venv/bin/activate
+        python3 ./moo.py "$1" "$2" "$3"
+}
+
+moosave() {
+        cd $HOME/c/moo-deng-data # Replace with your data directory (matching config.json)
+        # Need to run `yarn init` and `yarn add prettier` in the data dir first
+        yarn prettier . --write
+        # Need to run `git init` in the data dir first
+        git add .
+        git commit -m "."
+        git push
+}
+```
 
 # Commands
 
@@ -21,10 +50,6 @@ Revise learned cards.
 ## moo deng
 
 Show a cute ASCII hippo.
-
-# Installation
-
-Coming soon. I gotta actually build the thing first.
 
 # About
 
