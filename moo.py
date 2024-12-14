@@ -126,7 +126,14 @@ def practice(f, state, cards_to_practice, fuzz_mins):
         print("========================================")
         print(card["front"])
         print("========================================")
-        getkey() # ignore input; any key continues
+        action = getkey()
+        if action == 's':
+                # Skip this card
+                print("Skipped.")
+                print()
+                continue
+        else:
+                pass # any other key flips card
 
         next_interval_info = f.repeat(card_state)
         intervals = {
